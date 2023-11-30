@@ -1,1 +1,2 @@
-you-get
+numpy
+opencv-python
