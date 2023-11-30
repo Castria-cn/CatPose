@@ -51,7 +51,7 @@ def _get_feature(self, frame: np.ndarray) -> np.ndarray:
 ```
 实现以上三个方法之后，可以调用`VideoProcessor.process`获取标注数据对。
 ```python
- def process(self, video_path: str, xml_path: str) -> List[Tuple[np.ndarray, float]]:
+ def process(self, video_path: str, xml_path: str) -> None:
     """
     :param video_path: 视频路径
     :param xml_path: 弹幕路径

@@ -1,3 +1,4 @@
+import os
 import cv2
 import numpy as np
 from typing import List, Tuple
@@ -37,12 +38,16 @@ class VideoProcessor:
     """
     该类用于从视频中提取监督信息，用于后续训练。
     """
-    def __init__(self, scoring_threshold=5):
+    def __init__(self, csv_path, scoring_threshold=5):
         """
+        :param csv_path: 用于存储数据的csv文件
         :param scoring_threshold: 只有某帧附近的弹幕数 > scoring_threshold 才会被考虑
         """
         self.current_ptr = 0
         self.scoring_threshold = scoring_threshold
+        if not os.path.exists(csv_path):
+            with open(csv_path, 'w') as f:
+                f.close()
     
     def _get_neighbor_danmaku(self, danmaku: List[Tuple[float, str]], time_stamp: float, k_neighbor=10) -> List[str]:
         """
@@ -85,8 +90,9 @@ class VideoProcessor:
         # TODO
         return frame.sum(0)
 
-    def process(self, video_path: str, xml_path: str) -> List[Tuple[np.ndarray, float]]:
+    def process(self, video_path: str, xml_path: str) -> None:
         """
+        从视频中提取训练数据，保存到csv文件中。
         :param video_path: 视频路径
         :param xml_path: 弹幕路径
         :return: List[Tuple[np.ndarray, float]], 提取得到的监督数据
@@ -94,6 +100,7 @@ class VideoProcessor:
         cap = cv2.VideoCapture(video_path)
         danmaku = parse_xml(xml_path, sort=True)
         self.current_ptr = 0
+        self.data = []
 
         while True:
             ret, frame = cap.read()
@@ -112,7 +119,8 @@ class VideoProcessor:
                     features = self._get_feature(frame)
           
                     # (features, danmaku_score) 为一组数据, 0 <= danmaku_score <= 1是监督信号
+                    # TODO save (danmaku_score, features) pair
 
 if __name__ == '__main__':
-    processor = VideoProcessor()
+    processor = VideoProcessor('data/train.csv')
     processor.process('data/video/1.mp4', 'data/xml/1.xml')
