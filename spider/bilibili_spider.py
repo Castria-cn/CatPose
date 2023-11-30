@@ -19,7 +19,7 @@ class BilibiliSpider:
         assert 'data' in result # result['data'][0]['cid']
 
         return result['data'][0]['cid']
-    def get_Danmaku(self, bv_id: str, xml_path: str) -> None:
+    def get_danmaku(self, bv_id: str, xml_path: str) -> None:
         """
         将指定BV号的弹幕保存为xml文件。
         :param bv_id: BV号
