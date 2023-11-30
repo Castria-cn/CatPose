@@ -55,7 +55,6 @@ def _get_feature(self, frame: np.ndarray) -> np.ndarray:
     """
     :param video_path: 视频路径
     :param xml_path: 弹幕路径
-    :return: List[Tuple[np.ndarray, float]], 提取得到的监督数据
     """
     pass
 ```
