@@ -5,6 +5,7 @@ import PySimpleGUI as sg
 from collections import Counter
 from yolo import YOLOInference
 from typing import List, Tuple
+from pose import MMPoseWrapper
 import xml.etree.ElementTree as ET
 
 def get_time_from_attr(attributes: str) -> float:
@@ -50,6 +51,7 @@ class VideoProcessor:
         """
         self.current_ptr = 0
         self.yolo_inf = YOLOInference()
+        self.pose_inf = MMPoseWrapper()
         self.scoring_threshold = scoring_threshold
         self.confidence_threshold = confidence_threshold
         self.sample_rate = sample_rate
@@ -93,14 +95,23 @@ class VideoProcessor:
             return True, results
         return False, None
     
-    def _get_feature(self, frame: np.ndarray) -> np.ndarray:
+    def _get_feature(self, frame: np.ndarray, show: bool=False) -> Tuple[bool, np.ndarray]:
         """
-        给定帧，从该帧中提取关节特征信息。
+        给定帧，从该帧中提取关节特征信息。若提取失败，返回(False, None).
         :param frame: np.ndarray(h, w), uint8表示的帧
-        :return: np.ndarray, 从该帧中提取得到的关节信息，用于构建数据集进行训练。
+        :return: (bool, np.ndarray), 从该帧中提取得到的关节信息，用于构建数据集进行训练。
         """
-        # TODO
-        return frame.sum(0)
+        inf_result = self.pose_inf.inference(frame, show=show)
+        if len(inf_result['predictions'][0]) != 1:
+            return False, None
+        key_points = inf_result['predictions'][0][0]['keypoints']
+        print(inf_result['predictions'][0][0]['bbox'])
+        # 归一化
+        key_points = np.array(key_points)
+        key_points[:, 0] /= frame.shape[1] # 第 0 列是x(横), 除以shape[1]
+        key_points[:, 1] /= frame.shape[0] # 第 1 列是y(纵), 除以shape[0]
+
+        return key_points
 
     def process(self, video_path: str, xml_path: str, debug=False) -> int:
         """
@@ -135,8 +146,9 @@ class VideoProcessor:
                 interested, result = self._is_interested_frame(frame) 
                 if interested: # 该帧为感兴趣帧(比如包含猫的图像)
                     # x: 横, y: 纵
-                    x_min, y_min = int(result['xmin']['0']), int(result['ymin']['0'])
-                    x_max, y_max = int(result['xmax']['0']), int(result['ymax']['0'])
+                    cat_id = [key for key, value in result['name'].items() if value == 'cat'][0]
+                    x_min, y_min = int(result['xmin'][cat_id]), int(result['ymin'][cat_id])
+                    x_max, y_max = int(result['xmax'][cat_id]), int(result['ymax'][cat_id])
                     roi = frame[y_min:y_max, x_min:x_max,:]
 
                     if debug:
@@ -144,7 +156,7 @@ class VideoProcessor:
                         sg.popup(current_danmaku, title=f'cat at {time_stamp}')
                         cv2.destroyAllWindows()
                     danmaku_score = self._get_danmaku_score(current_danmaku)
-                    features = self._get_feature(roi)
+                    features = self._get_feature(roi, show=debug)
           
                     # (features, danmaku_score) 为一组数据, 0 <= danmaku_score <= 1是监督信号
                     # TODO save (danmaku_score, features) pair

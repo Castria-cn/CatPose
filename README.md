@@ -1,8 +1,11 @@
 # 安装
 Python版本需要>=3.8; YOLO实现使用`https://github.com/ultralytics/yolov5`.直接安装的`torch`应该是cpu版本，没法用GPU加速。
+## 1.其它部分的安装
 ```bash
 pip install -r requirements.txt
 ```
+## 2.MMPOSE
+`MMPOSE`安装参照`https://mmpose.readthedocs.io/zh-cn/latest/installation.html`.作为Python包安装即可。
 # 说明
 爬虫示例文件见`spider/main.py.`
 
