@@ -64,4 +64,5 @@ class BilibiliSpider:
 
 if __name__ == '__main__':
     spider = BilibiliSpider()
-    spider.get_video('BV1MN411J7Dw', './data/video/1.mp4')
+    spider.get_video('BV1uN41177sC', './data/video/cat2.mp4')
+    spider.get_danmaku('BV1uN41177sC', 'data/xml/cat2.xml')

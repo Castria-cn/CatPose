@@ -1,6 +1,9 @@
 import os
 import cv2
 import numpy as np
+import PySimpleGUI as sg
+from collections import Counter
+from yolo import YOLOInference
 from typing import List, Tuple
 import xml.etree.ElementTree as ET
 
@@ -38,13 +41,18 @@ class VideoProcessor:
     """
     该类用于从视频中提取监督信息，用于后续训练。
     """
-    def __init__(self, csv_path, scoring_threshold=5):
+    def __init__(self, csv_path, scoring_threshold=5, confidence_threshold=0.7, sample_rate=5):
         """
         :param csv_path: 用于存储数据的csv文件
         :param scoring_threshold: 只有某帧附近的弹幕数 > scoring_threshold 才会被考虑
+        :param confidence_threshold: 只有置信度 > confidence_threshold 才会被考虑
+        :param sample_rate: 采样率，每 sample_rate 帧采集一次数据
         """
         self.current_ptr = 0
+        self.yolo_inf = YOLOInference()
         self.scoring_threshold = scoring_threshold
+        self.confidence_threshold = confidence_threshold
+        self.sample_rate = sample_rate
         if not os.path.exists(csv_path):
             with open(csv_path, 'w') as f:
                 f.close()
@@ -72,38 +80,48 @@ class VideoProcessor:
         # TODO
         return 1.0
 
-    def _is_interested_frame(self, frame: np.ndarray) -> bool:
+    def _is_interested_frame(self, frame: np.ndarray) -> Tuple[bool, dict]:
         """
         给定帧，确定该帧是否包含感兴趣内容(比如检测到猫)。只有感兴趣内容才会被进一步处理(如提取关节)。
         :param frame: np.ndarray(h, w), uint8表示的帧
-        :return: bool, 该帧是否包含感兴趣内容
+        :return: Tuple[bool, dict], 该帧是否包含感兴趣内容。若包含感兴趣内容，返回(True, 识别结果json); 否则返回(False, None).
         """
-        # TODO
-        return True
+        frame = frame[..., ::-1]
+        results = self.yolo_inf.inference(frame)
+        counter = Counter(results['name'].values())
+        if counter.get('cat', 0) == 1 and results['confidence']['0'] > self.confidence_threshold:
+            return True, results
+        return False, None
     
     def _get_feature(self, frame: np.ndarray) -> np.ndarray:
         """
         给定帧，从该帧中提取关节特征信息。
-        :param frame: np.array(h, w), uint8表示的帧
-        :return: np.array, 从该帧中提取得到的关节信息，用于构建数据集进行训练。
+        :param frame: np.ndarray(h, w), uint8表示的帧
+        :return: np.ndarray, 从该帧中提取得到的关节信息，用于构建数据集进行训练。
         """
         # TODO
         return frame.sum(0)
 
-    def process(self, video_path: str, xml_path: str) -> None:
+    def process(self, video_path: str, xml_path: str, debug=False) -> int:
         """
         从视频中提取训练数据，保存到csv文件中。
         :param video_path: 视频路径
         :param xml_path: 弹幕路径
-        :return: List[Tuple[np.ndarray, float]], 提取得到的监督数据
+        :param debug: 查看中间结果
+        :return: int, 从该视频中提取得到的数据组数
         """
         cap = cv2.VideoCapture(video_path)
         danmaku = parse_xml(xml_path, sort=True)
         self.current_ptr = 0
-        self.data = []
+        frame_num = 0
+        batch_num = 0
 
         while True:
             ret, frame = cap.read()
+            frame_num += 1
+
+            if frame_num % self.sample_rate != 0:
+                continue
 
             if not ret:
                 break
@@ -114,13 +132,26 @@ class VideoProcessor:
             current_danmaku = self._get_neighbor_danmaku(danmaku, time_stamp)
 
             if len(current_danmaku) > self.scoring_threshold: # 弹幕数量足够多
-                if self._is_interested_frame(frame): # 该帧为感兴趣帧(比如包含猫的图像)
+                interested, result = self._is_interested_frame(frame) 
+                if interested: # 该帧为感兴趣帧(比如包含猫的图像)
+                    # x: 横, y: 纵
+                    x_min, y_min = int(result['xmin']['0']), int(result['ymin']['0'])
+                    x_max, y_max = int(result['xmax']['0']), int(result['ymax']['0'])
+                    roi = frame[y_min:y_max, x_min:x_max,:]
+
+                    if debug:
+                        cv2.imshow(f'cat at {time_stamp}', roi)
+                        sg.popup(current_danmaku, title=f'cat at {time_stamp}')
+                        cv2.destroyAllWindows()
                     danmaku_score = self._get_danmaku_score(current_danmaku)
-                    features = self._get_feature(frame)
+                    features = self._get_feature(roi)
           
                     # (features, danmaku_score) 为一组数据, 0 <= danmaku_score <= 1是监督信号
                     # TODO save (danmaku_score, features) pair
+                    batch_num += 1
+
+        return batch_num
 
 if __name__ == '__main__':
     processor = VideoProcessor('data/train.csv')
-    processor.process('data/video/1.mp4', 'data/xml/1.xml')
+    processor.process('data/video/cat2.mp4', 'data/xml/cat2.xml', debug=True)

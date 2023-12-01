@@ -8,4 +8,4 @@ if __name__ == '__main__':
     spider.get_video('BV1Bw411H7un', 'data/video/1.mp4') # 获取视频文件并保存至data/video/1.mp4
 
     processor = VideoProcessor('./data/train.csv')
-    processor.process('./data/video/1.mp4', './data/xml/1.xml') # 从视频中提取数据并追加到data/train.csv中
+    processor.process('./data/video/1.mp4', './data/xml/1.xml', debug=True) # 从视频中提取数据并追加到data/train.csv中

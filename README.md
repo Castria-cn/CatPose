@@ -1,4 +1,5 @@
 # 安装
+Python版本需要>=3.8; YOLO实现使用`https://github.com/ultralytics/yolov5`.直接安装的`torch`应该是cpu版本，没法用GPU加速。
 ```bash
 pip install -r requirements.txt
 ```
