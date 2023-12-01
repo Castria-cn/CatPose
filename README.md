@@ -7,6 +7,7 @@ pip install -r requirements.txt
 ## 2.MMPOSE
 `MMPOSE`安装参照`https://mmpose.readthedocs.io/zh-cn/latest/installation.html`.作为Python包安装即可。
 # 说明
+## 数据获取
 爬虫示例文件见`spider/main.py.`
 
 `spider`文件夹主要用于爬取信息、得到监督数据。`spider.bilibili_spider.BilibiliSpider`用于从B站爬取视频以及弹幕数据。
@@ -27,7 +28,24 @@ def get_video(self, bv_id: str, video_path: str) -> None:
     """
     pass
 ```
-`spider.utils.VideoProcessor`用于从视频中提取监督信息，从而进行后续训练。有三个方法是核心(TODO)：
+`spider.utils.VideoProcessor`用于从视频中提取监督信息，从而进行后续训练。
+
+可以使用`VideoProcessor.process`获取得到的视频的数据：
+```python
+def process(self, video_path: str, xml_path: str, debug=False) -> int:
+    """
+    从视频中提取训练数据，保存(append)到csv文件中。
+    :param video_path: 视频路径
+    :param xml_path: 弹幕路径
+    :param debug: 查看中间结果
+    :return: int, 从该视频中提取得到的数据组数
+    """
+```
+
+<details>
+<summary>点击查看关于内部实现的说明</summary>
+
+有三个方法是核心(TODO)：
 ```python
 def _get_danmaku_score(self, danmakus: List[str]) -> float:
     """
@@ -37,15 +55,15 @@ def _get_danmaku_score(self, danmakus: List[str]) -> float:
     """
     # TODO
 
-def _is_interested_frame(self, frame: np.ndarray) -> bool:
+def is_interested_frame(self, frame: np.ndarray) -> Tuple[bool, dict]:
     """
     给定帧，确定该帧是否包含感兴趣内容(比如检测到猫)。只有感兴趣内容才会被进一步处理(如提取关节)。
     :param frame: np.ndarray(h, w), uint8表示的帧
-    :return: bool, 该帧是否包含感兴趣内容
+    :return: Tuple[bool, dict], 该帧是否包含感兴趣内容。若包含感兴趣内容，返回(True, 识别结果json); 否则返回(False, None).
     """
     # TODO
 
-def _get_feature(self, frame: np.ndarray) -> np.ndarray:
+def get_feature(self, frame: np.ndarray) -> np.ndarray:
     """
     给定帧，从该帧中提取关节特征信息。
     :param frame: np.array(h, w), uint8表示的帧
@@ -54,13 +72,28 @@ def _get_feature(self, frame: np.ndarray) -> np.ndarray:
     # TODO
 ```
 实现以上三个方法之后，可以调用`VideoProcessor.process`获取标注数据对。
+</details>
+
+## 训练&推理
+推理的示例代码见`train.main`.主要的类为`train.PoseScoreWrapper`;
 ```python
-def process(self, video_path: str, xml_path: str, debug=False) -> int:
-    """
-    从视频中提取训练数据，保存到csv文件中。
-    :param video_path: 视频路径
-    :param xml_path: 弹幕路径
-    :param debug: 查看中间结果
-    :return: int, 从该视频中提取得到的数据组数
-    """
+class PoseScoreWrapper:
+    def __init__(self, cfg_path: str, model=None):
+        """
+        :param cfg_path: yaml配置文件路径
+        :param model: 模型文件路径, 默认为随机初始化
+        """
 ```
+### 训练
+```python
+wrapper = PoseScoreWrapper('config/train.yaml')
+wrapper.train()
+```
+### 推理
+```python
+wrapper = PoseScoreWrapper('config/train.yaml', 'model/inf_model.pt')
+inf_result = wrapper.inference('demo/demo.jpeg')
+print(f'图片得分: {inf_result}')
+```
+### 配置文件
+配置文件在`config/train.yaml`下。各参数说明见注释。

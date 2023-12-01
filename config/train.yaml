@@ -1,0 +1,7 @@
+BATCH_SIZE: 4 # batch size
+CSV_PATH: 'data/train.csv' # 数据集位置
+EPOCH: 20 # epoch
+LR: 0.001 # 学习率
+MODEL_PATH: 'model/inf_model.pt' # 模型文件保存位置
+CRITERION: 'MSE' # 损失函数, ['MSE']
+SAVE_EPOCH: 5  # 每 SAVE_EPOCH 个 epoch 保存一次模型
