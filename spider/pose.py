@@ -2,8 +2,14 @@ import numpy as np
 from mmpose.apis import MMPoseInferencer
 
 class MMPoseWrapper:
-    def __init__(self):
-        self.inferencer = MMPoseInferencer('animal')
+    """
+    用于姿态推理。
+    """
+    def __init__(self, model_alias='animal'):
+        """
+        :param model_alias: 模型别名，可选项参见MMPose文档
+        """
+        self.inferencer = MMPoseInferencer(model_alias)
     def inference(self, image: np.ndarray, show=False) -> dict:
         """
         :param image: np.ndarray, 输入图像
