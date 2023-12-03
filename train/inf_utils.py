@@ -147,7 +147,7 @@ class VideoProcessor:
             current_danmaku = self._get_neighbor_danmaku(danmaku, time_stamp)
 
             if len(current_danmaku) > self.scoring_threshold: # 弹幕数量足够多
-                interested, result = self._is_interested_frame(frame) 
+                interested, result = self.is_interested_frame(frame) 
                 if interested: # 该帧为感兴趣帧(比如包含猫的图像)
                     # x: 横, y: 纵
                     cat_id = [key for key, value in result['name'].items() if value == 'cat'][0]
@@ -160,7 +160,7 @@ class VideoProcessor:
                         sg.popup(current_danmaku, title=f'cat at {time_stamp}')
                         cv2.destroyAllWindows()
                     danmaku_score = self._get_danmaku_score(current_danmaku)
-                    flag, features = self._get_feature(roi, show=debug)
+                    flag, features = self.get_feature(roi, show=debug)
           
                     # (features, danmaku_score) 为一组数据, 0 <= danmaku_score <= 1是监督信号
                     if flag:
