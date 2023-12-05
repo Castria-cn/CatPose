@@ -92,15 +92,18 @@ class BilibiliSpider:
             f.write(video_request.content)
             f.close()
     
-    def save_history(self):
+    def save_history(self) -> None:
+        """
+        保存历史记录。
+        """
         with open(self.cfg['history_file'], 'w') as f:
             json.dump(self.history, f)
             f.close()
     
     def run(self, debug: bool=False) -> None:
         """
-        :param interval: 爬取两个视频之间的间隔
-        :param save_interval: 每爬取并处理完`save_interval`个视频保存一下history
+        进行数据爬取。
+        :param debug: 是否显示中间结果
         """
         last_page = self.history['last_page']
         scraper = BilibiliScraper()
