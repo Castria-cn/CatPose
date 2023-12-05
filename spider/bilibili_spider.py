@@ -109,6 +109,7 @@ class BilibiliSpider:
                                    self.cfg['scoring_threshold'],
                                    self.cfg['confidence_threshold'],
                                    self.cfg['sample_rate'],
+                                   self.cfg['k_neighbor'],
                                    self.cfg['clean_enabled'])
         while True:
             logging.info(f'Start from page {last_page}')
@@ -123,7 +124,7 @@ class BilibiliSpider:
                     self.get_video(bvid, f'data/video/{bvid}.mp4')
                     logging.info(f'Successfully downloaded video file of {bvid}')
 
-                    size = processor.process(f'data/video/{bvid}.xml', f'data/xml/{bvid}.xml', debug=debug)
+                    size = processor.process(f'data/video/{bvid}.mp4', f'data/xml/{bvid}.xml', debug=debug)
                     logging.info(f'Append {size} items to csv file')
                     
                     cnt += 1

@@ -52,7 +52,9 @@ class PoseScoreWrapper:
                 optimizer.step()
             
             if i % self.cfg['save_epoch'] == self.cfg['save_epoch'] - 1:
-                torch.save(self.model, self.cfg['model_path'])
+                torch.save(self.model, self.cfg['model_path'] + f'/model_epoch{i + 1}.pt')
+        
+        torch.save(self.model, self.cfg['model_path'] + f'/model_final.pt')
     
     def inference(self, img: Union[str, np.ndarray]) -> float:
         """

@@ -8,13 +8,13 @@ pip install -r requirements.txt
 `MMPOSE`安装参照`https://mmpose.readthedocs.io/zh-cn/latest/installation.html`.作为Python包安装即可。
 # 说明
 ## 数据获取
-运行`spider/main.py`即可。爬虫部分的配置文件见`config/spider.yaml`.日志文件默认为`data/log.txt`.
+运行`spider/main.py`即可。爬虫部分的配置文件见`config/spider.yaml`.日志文件默认为`data/log.txt`.如果设备GPU可用会自动使用GPU。
 ```python
 from bilibili_spider import BilibiliSpider
 
 if __name__ == '__main__':
     spider = BilibiliSpider('config/spider.yaml')
-    spider.run()
+    spider.run(debug=False)
 ```
 <details>
 <summary>历史</summary>
@@ -103,7 +103,7 @@ wrapper.train()
 ### 推理
 ```python
 wrapper = PoseScoreWrapper('config/train.yaml', 'model/inf_model.pt')
-inf_result = wrapper.inference('demo/demo.jpeg')
+inf_result = wrapper.inference('demo/demo.jpeg') # 也可以接收(h, w, c)的np.ndarray作为输入
 print(f'图片得分: {inf_result}')
 ```
 ### 配置文件

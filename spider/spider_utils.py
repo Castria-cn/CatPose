@@ -43,7 +43,7 @@ class VideoProcessor:
     """
     该类用于从视频中提取监督信息，用于后续训练。
     """
-    def __init__(self, csv_path, scoring_threshold=5, confidence_threshold=0.7, sample_rate=5, clean_enabled=-1):
+    def __init__(self, csv_path, scoring_threshold=5, confidence_threshold=0.7, sample_rate=5, k_neighbor=10, clean_enabled=-1):
         """
         :param csv_path: 用于存储数据的csv文件
         :param scoring_threshold: 只有某帧附近的弹幕数 > scoring_threshold 才会被考虑
@@ -60,6 +60,7 @@ class VideoProcessor:
         self.sample_rate = sample_rate
         self.csv_path = csv_path
         self.process_cnt = 0
+        self.k_neighbor = k_neighbor
         self.clean_enabled = clean_enabled
         if not os.path.exists(csv_path):
             with open(csv_path, 'w') as f:
@@ -146,7 +147,7 @@ class VideoProcessor:
             time_stamp = cap.get(cv2.CAP_PROP_POS_MSEC) # 该帧的时间戳(ms)
             time_stamp /= 1000 # ms -> s
 
-            current_danmaku = self._get_neighbor_danmaku(danmaku, time_stamp)
+            current_danmaku = self._get_neighbor_danmaku(danmaku, time_stamp, self.k_neighbor)
 
             if len(current_danmaku) > self.scoring_threshold: # 弹幕数量足够多
                 interested, result = self.is_interested_frame(frame) 
@@ -172,6 +173,9 @@ class VideoProcessor:
 
         cap.release()
         # append to csv
+        if len(data) == 0: # no interested frame
+            return 0
+        
         data = np.stack(data)
         data_str = np.array2string(data, separator=',', max_line_width=10000).replace('[', '').replace(']', '').replace(' ', '').replace(',\n', '\n')
         with open(self.csv_path, 'a') as f:
