@@ -18,7 +18,8 @@ if __name__ == '__main__':
 ```
 <details>
 <summary>历史</summary>
-爬虫示例文件见`spider/main.py.`
+
+爬虫示例文件见`spider/main.py`.
 
 `spider`文件夹主要用于爬取信息、得到监督数据。`spider.bilibili_spider.BilibiliSpider`用于从B站爬取视频以及弹幕数据。
 ```python
