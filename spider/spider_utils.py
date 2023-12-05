@@ -64,6 +64,8 @@ class VideoProcessor:
         if not os.path.exists(csv_path):
             with open(csv_path, 'w') as f:
                 f.close()
+        
+        np.set_printoptions(threshold=10000)
     
     def _get_neighbor_danmaku(self, danmaku: List[Tuple[float, str]], time_stamp: float, k_neighbor=10) -> List[str]:
         """

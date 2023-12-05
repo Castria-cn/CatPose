@@ -29,15 +29,15 @@ class PoseScoreWrapper:
         """
         使用关键点信息进行模型训练。
         """
-        dataset = KeyPointDataset(self.cfg['CSV_PATH'])
-        loader = DataLoader(dataset, batch_size=self.cfg['BATCH_SIZE'])
+        dataset = KeyPointDataset(self.cfg['csv_path'])
+        loader = DataLoader(dataset, batch_size=self.cfg['batch_size'])
 
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.cfg['LR'])
-        if self.cfg['CRITERION'] == 'MSE':
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.cfg['lr'])
+        if self.cfg['criteriono'] == 'MSE':
             criterion = nn.MSELoss()
 
         self.model.train()
-        for i in range(self.cfg['EPOCH']):
+        for i in range(self.cfg['epoch']):
             for X, y in tqdm(loader, desc=f'Training epoch {i + 1}'):
                 if torch.cuda.is_available():
                     X = X.to('cuda')
@@ -51,8 +51,8 @@ class PoseScoreWrapper:
                 optimizer.zero_grad()
                 optimizer.step()
             
-            if i % self.cfg['SAVE_EPOCH'] == self.cfg['SAVE_EPOCH'] - 1:
-                torch.save(self.model, self.cfg['MODEL_PATH'])
+            if i % self.cfg['save_epoch'] == self.cfg['save_epoch'] - 1:
+                torch.save(self.model, self.cfg['model_path'])
     
     def inference(self, img: Union[str, np.ndarray]) -> float:
         """
@@ -61,7 +61,7 @@ class PoseScoreWrapper:
         :return: 推理得分 0 <= score <= 1
         """
         if not hasattr(self, 'processor'):
-            self.processor = VideoProcessor(self.cfg['CSV_PATH'])
+            self.processor = VideoProcessor(self.cfg['csv_path'])
         
         if type(img) == str:
             frame = cv2.imread(img)

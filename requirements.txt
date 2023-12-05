@@ -1,5 +1,6 @@
 pyyaml
 PySimpleGUI
+beautifulsoup4
 # YOLOv5 requirements
 # Usage: pip install -r requirements.txt
 

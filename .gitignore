@@ -2,3 +2,5 @@
 data/video/*
 data/xml/*
 data/train.csv
+data/history.json
+data/log.txt

@@ -8,6 +8,16 @@ pip install -r requirements.txt
 `MMPOSE`安装参照`https://mmpose.readthedocs.io/zh-cn/latest/installation.html`.作为Python包安装即可。
 # 说明
 ## 数据获取
+运行`spider/main.py`即可。爬虫部分的配置文件见`config/spider.yaml`.日志文件默认为`data/log.txt`.
+```python
+from bilibili_spider import BilibiliSpider
+
+if __name__ == '__main__':
+    spider = BilibiliSpider('config/spider.yaml')
+    spider.run()
+```
+<details>
+<summary>历史</summary>
 爬虫示例文件见`spider/main.py.`
 
 `spider`文件夹主要用于爬取信息、得到监督数据。`spider.bilibili_spider.BilibiliSpider`用于从B站爬取视频以及弹幕数据。
@@ -28,7 +38,7 @@ def get_video(self, bv_id: str, video_path: str) -> None:
     """
     pass
 ```
-`spider.utils.VideoProcessor`用于从视频中提取监督信息，从而进行后续训练。
+`spider.spider_utils.VideoProcessor`用于从视频中提取监督信息，从而进行后续训练。
 
 可以使用`VideoProcessor.process`获取得到的视频的数据：
 ```python
@@ -41,6 +51,7 @@ def process(self, video_path: str, xml_path: str, debug=False) -> int:
     :return: int, 从该视频中提取得到的数据组数
     """
 ```
+</details>
 
 <details>
 <summary>点击查看关于内部实现的说明</summary>

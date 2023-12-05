@@ -1,8 +1,38 @@
+import os
+import json
+import time
+import yaml
+import logging
 import requests
+from bvid import BilibiliScraper
+from spider_utils import VideoProcessor
 
 class BilibiliSpider:
-    def __init__(self):
-        pass
+    def __init__(self, cfg_path: str='config/spider.yaml'):
+        """
+        :param history_path: 爬取的历史记录
+        """
+        with open(cfg_path, 'r', encoding='utf-8') as yaml_file:
+            self.cfg = yaml.safe_load(yaml_file)
+        self.history_path = self.cfg['history_file']
+        if not os.path.exists(self.history_path):
+            with open(self.history_path, 'w') as f:
+                self.history = {'last_page': 1,
+                                '1': []}
+                json.dump(self.history, f)
+                f.close()
+        else:
+            with open(self.history_path, 'r') as f:
+                self.history = json.load(f)
+                f.close()
+        
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        file_handler = logging.FileHandler(self.cfg['log_path'])
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(formatter)
+        logging.getLogger().addHandler(file_handler)
+        
     def get_cid(self, bv_id: str) -> str:
         """
         B站视频内部用cid表示，获取弹幕需要从BV号转cid.
@@ -61,8 +91,55 @@ class BilibiliSpider:
         with open(video_path, 'wb') as f:
             f.write(video_request.content)
             f.close()
+    
+    def save_history(self):
+        with open(self.cfg['history_file'], 'w') as f:
+            json.dump(self.history, f)
+            f.close()
+    
+    def run(self, debug: bool=False) -> None:
+        """
+        :param interval: 爬取两个视频之间的间隔
+        :param save_interval: 每爬取并处理完`save_interval`个视频保存一下history
+        """
+        last_page = self.history['last_page']
+        scraper = BilibiliScraper()
+        cnt = 0
+        processor = VideoProcessor(self.cfg['csv_path'],
+                                   self.cfg['scoring_threshold'],
+                                   self.cfg['confidence_threshold'],
+                                   self.cfg['sample_rate'],
+                                   self.cfg['clean_enabled'])
+        while True:
+            logging.info(f'Start from page {last_page}')
+            bvids = scraper.get_page(last_page)
+            logging.info(f'Get page {last_page} bvids({len(bvids)})')
+            for bvid in bvids:
+                # hadn't downloaded
+                if not bvid in self.history[str(last_page)]:
+                    self.get_danmaku(bvid, f'data/xml/{bvid}.xml')
+                    logging.info(f'Successfully downloaded danmaku file of {bvid}')
+
+                    self.get_video(bvid, f'data/video/{bvid}.mp4')
+                    logging.info(f'Successfully downloaded video file of {bvid}')
+
+                    size = processor.process(f'data/video/{bvid}.xml', f'data/xml/{bvid}.xml', debug=debug)
+                    logging.info(f'Append {size} items to csv file')
+                    
+                    cnt += 1
+                    self.history[str(last_page)].append(bvid)
+                    # save history file
+                    if cnt == self.cfg['limit']:
+                        self.save_history()
+                        return
+                    if cnt % self.cfg['save_interval'] == 0:
+                        self.save_history()
+                    
+                    if self.cfg['interval']:
+                        time.sleep(self.cfg['interval'])
+            last_page += 1
+            self.history['last_page'] = last_page
 
 if __name__ == '__main__':
-    spider = BilibiliSpider()
-    spider.get_video('BV1uN41177sC', './data/video/cat2.mp4')
-    spider.get_danmaku('BV1uN41177sC', 'data/xml/cat2.xml')
+    spider = BilibiliSpider('config/spider.yaml')
+    spider.run()
