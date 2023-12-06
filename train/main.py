@@ -25,7 +25,7 @@ class PoseScoreWrapper:
         if torch.cuda.is_available():
             self.model.to('cuda')
 
-    def train(self):
+    def train(self) -> None:
         """
         使用关键点信息进行模型训练。
         """

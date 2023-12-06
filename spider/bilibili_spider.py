@@ -10,7 +10,7 @@ from spider_utils import VideoProcessor
 class BilibiliSpider:
     def __init__(self, cfg_path: str='config/spider.yaml'):
         """
-        :param history_path: 爬取的历史记录
+        :param cfg_path: 配置文件路径
         """
         with open(cfg_path, 'r', encoding='utf-8') as yaml_file:
             self.cfg = yaml.safe_load(yaml_file)

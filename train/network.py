@@ -38,7 +38,7 @@ class PoseNet(nn.Module):
         self.linear3 = nn.Linear(hidden_dim, 1)
         self.activation = nn.ReLU()
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.linear1(x)
         x = self.activation(x)
         x = self.linear2(x)
