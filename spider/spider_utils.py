@@ -8,6 +8,8 @@ from yolo import YOLOInference
 from typing import List, Tuple
 from pose import MMPoseWrapper
 import xml.etree.ElementTree as ET
+from modelscope.pipelines import pipeline
+from modelscope.utils.constant import Tasks
 
 def get_time_from_attr(attributes: str) -> float:
     """
@@ -85,11 +87,16 @@ class VideoProcessor:
     def _get_danmaku_score(self, danmakus: List[str]) -> float:
         """
         给定弹幕列表，返回该弹幕的(情感)得分。该得分会作为该帧的监督信号。
+        目前得分会在所有弹幕上进行平均。
         :param danmakus: List[str], 弹幕列表
         :return: 弹幕情感得分score, 0 <= score <= 1
         """
-        # TODO
-        return 1.0
+        if not hasattr(self, 'score_model'):
+            self.score_model = pipeline(Tasks.text_classification, 'damo/nlp_structbert_sentiment-classification_chinese-large')
+        
+        result = self.score_model(danmakus)
+        result = np.array([item['scores'][int(item['labels'][0] != '正面')] for item in result]) # 0不是'正面'对应下标就是1
+        return float(np.mean(result))
 
     def is_interested_frame(self, frame: np.ndarray) -> Tuple[bool, dict]:
         """
@@ -158,12 +165,12 @@ class VideoProcessor:
                     x_max, y_max = int(result['xmax'][cat_id]), int(result['ymax'][cat_id])
                     roi = frame[y_min:y_max, x_min:x_max,:]
 
-                    if debug:
-                        cv2.imshow(f'cat at {time_stamp}', roi)
-                        sg.popup(current_danmaku, title=f'cat at {time_stamp}')
-                        cv2.destroyAllWindows()
                     danmaku_score = self._get_danmaku_score(current_danmaku)
                     flag, features = self.get_feature(roi, show=debug)
+                    if debug:
+                        cv2.imshow(f'cat at {time_stamp}', roi)
+                        sg.popup(f'{current_danmaku}, score={danmaku_score}', title=f'cat at {time_stamp}')
+                        cv2.destroyAllWindows()
           
                     # (features, danmaku_score) 为一组数据, 0 <= danmaku_score <= 1是监督信号
                     if flag:
@@ -190,5 +197,5 @@ class VideoProcessor:
         return batch_size
 
 if __name__ == '__main__':
-    processor = VideoProcessor('data/train.csv', sample_rate=1000)
-    processor.process('data/video/cat2.mp4', 'data/xml/cat2.xml', debug=False)
+    processor = VideoProcessor(csv_path='data/train.csv')
+    processor.process('data/video/BV1hz4y1c7oQ.mp4', 'data/xml/BV1hz4y1c7oQ.xml', debug=True)
